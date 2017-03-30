@@ -97,3 +97,30 @@ CREATE TABLE msgReceivers
   PRIMARY KEY (id)
 ) engine=innodb DEFAULT CHARSET=utf8 comment '未接受消息的用户列表';
 
+
+#注册功能
+#基本流程：
+# 用户输入邮箱，确认后，系统发送注册邮件到邮箱上
+# 用户进入邮箱，点击链接，打开一个html注册页面，页面提示输入密码，用户设置密码后，可以在app上登录。
+
+#重置密码：
+# 用户点击忘记密码，输入邮箱，确认后，系统发送密码重置邮件到邮箱上
+# 用户进入邮箱，点击链接，打开一个html注册页面，页面提示输入密码，用户设置密码后，可以在app上用新密码登录。
+
+CREATE TABLE registrationCode
+(
+  id int(11) NOT NULL AUTO_INCREMENT,
+  code varchar(50) NOT NULL,
+  email varchar(255) NOT NULL,
+  activated tinyint(1) NOT NULL DEFAULT 0,
+  PRIMARY KEY (id)
+) engine=innodb DEFAULT CHARSET=utf8 comment '注册码';
+
+CREATE TABLE pwdResetCode
+(
+  id int(11) NOT NULL AUTO_INCREMENT,
+  code varchar(50) NOT NULL,
+  email varchar(255) NOT NULL,
+  activated tinyint(1) NOT NULL DEFAULT 0,
+  PRIMARY KEY (id)
+) engine=innodb DEFAULT CHARSET=utf8 comment '密码重置码';
