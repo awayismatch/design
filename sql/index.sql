@@ -18,7 +18,6 @@ CREATE TABLE profiles
   gender enum ('男','女') NOT NULL comment '性别',
   name varchar(70) NOT NULL comment '昵称',
   birthday date  comment '生日',
-  position varchar(255)  comment '位置',
   PRIMARY KEY (id)
 ) engine=innodb DEFAULT CHARSET=utf8 comment '个人资料';
 
@@ -36,6 +35,7 @@ CREATE TABLE contacts
 ) engine=innodb DEFAULT CHARSET=utf8 comment '联系人关系';
 
 # 为防止出现骚扰情况，添加‘黑名单’的功能，在聊天页面里面，可以设置加入黑名单。
+# 黑名单的功能可以后期再加上，只要系统设计的时候考虑一下这种可能性就行
 CREATE TABLE blacklists
 (
   id int(11) NOT NULL AUTO_INCREMENT,
@@ -47,48 +47,37 @@ CREATE TABLE blacklists
 
 #聊天
 #socket.io
-#基本流程，匹配成功时，开一个transaction,插入一个match，并根据matchId，插入两条matchSubscribers(对应两个用户)
 
-CREATE TABLE matchs
+
+CREATE TABLE chatRooms
 (
   id int(11) NOT NULL AUTO_INCREMENT,
   PRIMARY KEY (id)
-) engine=innodb DEFAULT CHARSET=utf8 comment '聊天匹配';
+) engine=innodb DEFAULT CHARSET=utf8 comment '聊天室';
 
-CREATE TABLE matchSubscribers
+CREATE TABLE chatUsers
 (
   id int(11) NOT NULL AUTO_INCREMENT,
-  matchId int(11) NOT NULL,
+  chatRoomId int(11) NOT NULL,
   userId int(11) NOT NULL,
   PRIMARY KEY (id)
-) engine=innodb DEFAULT CHARSET=utf8 comment '匹配订阅者，通常为聊天者自己';
+) engine=innodb DEFAULT CHARSET=utf8 comment '聊天室里的用户';
 
+#在消息这里，而要考虑多态的问题，比如说图片消息，文本消息，语音消息等。
 CREATE TABLE messages
 (
   id int(11) NOT NULL AUTO_INCREMENT,
-  matchId int(11) NOT NULL,
+  chatRoomId int(11) NOT NULL,
   type enum('text') NOT NULL DEFAULT 'text' comment '消息类型',
   `text` text comment '消息文本',
+  #未来支持图片及语音后，直接在这里加入voiceLength,url的字段，
+  #消息的多态问题由应用程序来判断，并选择相应需要使用的数据。
   PRIMARY KEY (id)
 ) engine=innodb DEFAULT CHARSET=utf8 comment '聊天消息';
 
 
-# 匹配算法, 使用mtysql进行存储，直接通过查询语言进行筛选就行了。
-## 匹配选项：1.年龄（范围） 2. 性别 3.位置（大致）
-CREATE TABLE matchings
-(
-  id int(11) NOT NULL AUTO_INCREMENT,
-  userId int(11) NOT NULL,
-  gender enum ('男','女') NOT NULL comment '期望性别',
-  minAge varchar(4)  comment '期望最小年龄',
-  maxAge varchar(4)  comment '期望最大年龄',
-  -- position varchar(255)  comment '期望位置',
-  PRIMARY KEY (id)
-) engine=innodb DEFAULT CHARSET=utf8 comment '等待匹配列表';
-## 优先级：性别>年龄>位置
 
-#当用户发送消息时，如果有subscriber不在线，subscriber的信息会被同步到msgReceivers里面，当用户接受消息时，会设置为received状态
-CREATE TABLE msgReceivers
+CREATE TABLE messageNotifications
 (
   id int(11) NOT NULL AUTO_INCREMENT,
   messageId int(11) NOT NULL,
@@ -97,6 +86,19 @@ CREATE TABLE msgReceivers
   PRIMARY KEY (id)
 ) engine=innodb DEFAULT CHARSET=utf8 comment '未接受消息的用户列表';
 
+
+# 每个profile都会有一个matchingProfile,当用户处于匹配状态时，是pending,当用户已经匹配成功或取消匹配时，处于close状态。
+
+CREATE TABLE matchingProfiles
+(
+  id int(11) NOT NULL AUTO_INCREMENT,
+  profileId int(11) NOT NULL,
+  expGender enum ('男','女') NOT NULL comment '期望性别',
+  expMinAge tinyint(2)  comment '期望最小年龄',
+  expMaxAge tinyint(2)  comment '期望最大年龄',
+  status enum('pending','close')  comment '当前状态',
+  PRIMARY KEY (id)
+) engine=innodb DEFAULT CHARSET=utf8 comment '等待匹配的人及其条件';
 
 #注册功能
 #基本流程：
