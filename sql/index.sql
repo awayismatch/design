@@ -8,6 +8,7 @@ CREATE TABLE users
   password varchar(70) NOT NULL comment '密码hash',
   PRIMARY KEY (id)
 ) engine=innodb DEFAULT CHARSET=utf8 comment 'user table';
+
 # 个人资料
 CREATE TABLE profiles
 (
@@ -32,7 +33,8 @@ CREATE TABLE feedBacks
   PRIMARY KEY (id)
 ) engine=innodb DEFAULT CHARSET=utf8 comment '问题反馈';
 
-# 聊天室
+# 聊天室，三种类型，朋友发起聊天，公开聊天室，私密聊天室
+# 多态表，有一些字段只对于某一个字段有意义。
 CREATE TABLE chatRooms
 (
   id int(11) NOT NULL AUTO_INCREMENT,
@@ -42,7 +44,7 @@ CREATE TABLE chatRooms
   totalAmount tinyint(1) comment '支持的总人数',
   femaleAmount tinyint(1) comment '支持的女生数量',
   maleAmount tinyint(1) comment '支持的男生数量',
-  openType enum('public','personal') not null default 'public' comment '聊天室的开放性',
+  roomType enum('public','private','friend') not null default 'public' comment '聊天室类型',
   PRIMARY KEY (id)
 ) engine=innodb DEFAULT CHARSET=utf8 comment '聊天室';
 
@@ -60,19 +62,19 @@ CREATE TABLE chatRoomAttenders
 
 # 在聊天室里可以不看某人的消息，这个有区别于黑名单的功能。注意即使加入了黑名单，在聊天室里
 # 也可以看到彼此的消息。
-CREATE TABLE chatRoomIgnoreUsers
+CREATE TABLE chatRoomBlockedUsers
 (
   id int(11) NOT NULL AUTO_INCREMENT,
   chatRoomId int(11) NOT NULL comment '聊天室id',
   userId int(11) NOT NULL comment '参与者id',
-  ignoreUserId int(11) NOT NULL comment '不看此人的消息',
-  ignore enum('open','close') not null default 'open' comment '是否不看此人的消息',
+  blockedUserId int(11) NOT NULL comment '被屏蔽的userId',
+  block enum('open','close') not null default 'open' comment '是否不看此人的消息',
   PRIMARY KEY (id)
-) engine=innodb DEFAULT CHARSET=utf8 comment '聊天室参与者';
-# chatRoomDisplayList //这个作为系统推荐的表，聊天室推荐列表以此表为依据
+) engine=innodb DEFAULT CHARSET=utf8 comment '聊天室里，不看某人的消息';
+
 
 # 黑名单,用户的发消息请求都会走这个黑名单检查。
-CREATE TABLE blockLists
+CREATE TABLE blockedUsers
 (
   id int(11) NOT NULL AUTO_INCREMENT,
   userId int(11) NOT NULL ,
@@ -113,3 +115,56 @@ CREATE TABLE contactRequests
 ) engine=innodb DEFAULT CHARSET=utf8 comment '请求加好友';
 
 ## 关于消息机制的表。
+
+#聊天室消息，这里需要有时间戳，对于新加入聊天室的用户，只发送加入时间以后的消息。
+CREATE TABLE chatRoomMessages
+(
+  id int(11) NOT NULL AUTO_INCREMENT,
+  chatRoomId int(11) NOT NULL comment '聊天室id',
+  userId int(11) NOT NULL comment '发送者id',
+  content varchar(500) NOT NULL comment '消息内容',
+  PRIMARY KEY (id)
+) engine=innodb DEFAULT CHARSET=utf8 comment '聊天室消息内容';
+
+CREATE TABLE chatRoomReceivedMessages
+(
+  id int(11) NOT NULL AUTO_INCREMENT,
+  chatRoomMessageId int(11) NOT NULL comment '聊天室消息id',
+  receiverUserId int(11) NOT NULL comment '消息接收者userId',
+  PRIMARY KEY (id)
+) engine=innodb DEFAULT CHARSET=utf8 comment '聊天室消息内容';
+
+# 找回密码
+
+CREATE TABLE passwordResetCodes
+(
+  id int(11) NOT NULL AUTO_INCREMENT,
+  code varchar(255) NOT NULL comment '重置码',
+  userId int(11) NOT NULL comment '重置密码的userId',
+  status enum('fresh','used') NOT NULL comment '状态信息',
+  PRIMARY KEY (id)
+) engine=innodb DEFAULT CHARSET=utf8 comment '密码重置功能';
+
+## 聊天室推荐功能
+# chatRoomDisplayList //这个作为系统推荐的表，聊天室推荐列表以此表为依据
+# 当有用户创建聊天室时，系统把符合推荐要求的插入到这个表里。
+# 规划：每个用户有一个浏览指针，每一次打开时，从最新的开始看，并记录此最新位置，
+# 因为该表是动态增大的，所以记录位置是必要的，这样可以在使用sql的limit分页时不出现重复。
+# 
+CREATE TABLE chatRoomDisplayList
+(
+  id int(11) NOT NULL AUTO_INCREMENT,
+  chatRoomId int(11) NOT NULL comment '聊天室id',
+  PRIMARY KEY (id)
+) engine=innodb DEFAULT CHARSET=utf8 comment '密码重置功能';
+
+CREATE TABLE chatRoomBrowseCursors
+(
+  id int(11) NOT NULL AUTO_INCREMENT,
+  userId int(11) NOT NULL comment '用户id',
+  startChatRoomId int(11) NOT NULL ,
+  endChatRoomId int(11) NOT NULL ,
+  prevStartChatRoomId int(11) NOT NULL ,
+  prevEndChatRoomId int(11) NOT NULL ,
+  PRIMARY KEY (id)
+) engine=innodb DEFAULT CHARSET=utf8 comment '密码重置功能';
