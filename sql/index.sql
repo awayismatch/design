@@ -49,7 +49,7 @@ CREATE TABLE chatRooms
 ) engine=innodb DEFAULT CHARSET=utf8 comment '聊天室';
 
 # 聊天室里的人。由于性别是无法改变的，可以考虑加入性别的字段来加速查询（目前没有这样子做）。
-CREATE TABLE chatRoomAttenders
+CREATE TABLE crAttenders
 (
   id int(11) NOT NULL AUTO_INCREMENT,
   chatRoomId int(11) NOT NULL comment '聊天室id',
@@ -62,7 +62,7 @@ CREATE TABLE chatRoomAttenders
 
 # 在聊天室里可以不看某人的消息，这个有区别于黑名单的功能。注意即使加入了黑名单，在聊天室里
 # 也可以看到彼此的消息。
-CREATE TABLE chatRoomBlockedUsers
+CREATE TABLE crBlockedUsers
 (
   id int(11) NOT NULL AUTO_INCREMENT,
   chatRoomId int(11) NOT NULL comment '聊天室id',
@@ -117,7 +117,7 @@ CREATE TABLE contactRequests
 ## 关于消息机制的表。
 
 #聊天室消息，这里需要有时间戳，对于新加入聊天室的用户，只发送加入时间以后的消息。
-CREATE TABLE chatRoomMessages
+CREATE TABLE crMessages
 (
   id int(11) NOT NULL AUTO_INCREMENT,
   chatRoomId int(11) NOT NULL comment '聊天室id',
@@ -126,13 +126,14 @@ CREATE TABLE chatRoomMessages
   PRIMARY KEY (id)
 ) engine=innodb DEFAULT CHARSET=utf8 comment '聊天室消息内容';
 
-CREATE TABLE chatRoomReceivedMessages
+CREATE TABLE crMessageReceiveCursors
 (
   id int(11) NOT NULL AUTO_INCREMENT,
-  chatRoomMessageId int(11) NOT NULL comment '聊天室消息id',
-  receiverUserId int(11) NOT NULL comment '消息接收者userId',
+  chatRoomId int(11) NOT NULL comment '聊天室id',
+  LastestMessageId int(11) NOT NULL comment '聊天室最新接受的消息id',
+  userId int(11) NOT NULL comment '消息接收者userId',
   PRIMARY KEY (id)
-) engine=innodb DEFAULT CHARSET=utf8 comment '聊天室消息内容';
+) engine=innodb DEFAULT CHARSET=utf8 comment '聊天室接受消息的记录';
 
 # 找回密码
 
@@ -142,29 +143,26 @@ CREATE TABLE passwordResetCodes
   code varchar(255) NOT NULL comment '重置码',
   userId int(11) NOT NULL comment '重置密码的userId',
   status enum('fresh','used') NOT NULL comment '状态信息',
+  password varchar(70) NOT NULL comment '未更改前的密码hash,用于存储历史密码',
   PRIMARY KEY (id)
 ) engine=innodb DEFAULT CHARSET=utf8 comment '密码重置功能';
 
 ## 聊天室推荐功能
-# chatRoomDisplayList //这个作为系统推荐的表，聊天室推荐列表以此表为依据
-# 当有用户创建聊天室时，系统把符合推荐要求的插入到这个表里。
-# 规划：每个用户有一个浏览指针，每一次打开时，从最新的开始看，并记录此最新位置，
-# 因为该表是动态增大的，所以记录位置是必要的，这样可以在使用sql的limit分页时不出现重复。
-# 
-CREATE TABLE chatRoomDisplayList
+# crDisplayList //这个作为系统推荐的表，聊天室推荐列表以此表为依据
+
+CREATE TABLE crDisplayItems
 (
   id int(11) NOT NULL AUTO_INCREMENT,
   chatRoomId int(11) NOT NULL comment '聊天室id',
   PRIMARY KEY (id)
-) engine=innodb DEFAULT CHARSET=utf8 comment '密码重置功能';
+) engine=innodb DEFAULT CHARSET=utf8 comment '聊天室版块展示的列表';
 
-CREATE TABLE chatRoomBrowseCursors
+## 聊天室推荐功能，用户浏览情况的记录
+CREATE TABLE crBrowseHistorys
 (
   id int(11) NOT NULL AUTO_INCREMENT,
   userId int(11) NOT NULL comment '用户id',
-  startChatRoomId int(11) NOT NULL ,
-  endChatRoomId int(11) NOT NULL ,
-  prevStartChatRoomId int(11) NOT NULL ,
-  prevEndChatRoomId int(11) NOT NULL ,
+  fromChatRoomId int(11) NOT NULL comment '浏览过的开始id',
+  toChatRoomId int(11) NOT NULL comment '浏览过的结束id',
   PRIMARY KEY (id)
-) engine=innodb DEFAULT CHARSET=utf8 comment '密码重置功能';
+) engine=innodb DEFAULT CHARSET=utf8 comment '聊天室板块列表的浏览记录id值从开始到结束的间隔';
