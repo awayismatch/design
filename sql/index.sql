@@ -15,9 +15,9 @@ CREATE TABLE profiles
   id int(11) NOT NULL AUTO_INCREMENT,
   userId int(11) UNIQUE NOT NULL,
   avatar varchar(500) NOT NULL comment '头像',
-  gender enum ('男','女') NOT NULL comment '性别',
-  name varchar(70) NOT NULL comment '昵称',
-  region varchar(100) NOT NULL comment '地区',
+  gender enum ('male','female') NOT NULL comment '性别',
+  name varchar(20) NOT NULL comment '昵称',
+  region varchar(255) NOT NULL comment '地区',
   birthday date NOT NULL comment '生日',
   email varchar(255)  comment '邮箱',
   whatsUp varchar(60) comment '个性签名',
@@ -68,7 +68,7 @@ CREATE TABLE crBlockedUsers
   chatRoomId int(11) NOT NULL comment '聊天室id',
   userId int(11) NOT NULL comment '参与者id',
   blockedUserId int(11) NOT NULL comment '被屏蔽的userId',
-  block enum('open','close') not null default 'open' comment '是否不看此人的消息',
+  block enum('open','close') not null default 'close' comment '是否不看此人的消息',
   PRIMARY KEY (id)
 ) engine=innodb DEFAULT CHARSET=utf8 comment '聊天室里，不看某人的消息';
 
@@ -98,7 +98,7 @@ CREATE TABLE contacts
   id int(11) NOT NULL AUTO_INCREMENT,
   userId int(11) NOT NULL,
   contactUserId int(11) NOT NULL comment '联系人userId',
-  remark varchar(10) comment '备注信息',
+  remark varchar(20) comment '备注信息',
   PRIMARY KEY (id)
 ) engine=innodb DEFAULT CHARSET=utf8 comment '联系人';
 
@@ -109,7 +109,7 @@ CREATE TABLE contactRequests
   userId int(11) NOT NULL,
   contactUserId int(11) NOT NULL comment '联系人userId',
   request varchar(60) comment '验证信息',
-  remark varchar(10) comment '备注信息',
+  remark varchar(20) comment '备注信息',
   status enum('pending','received','reject','accept') comment '该请求的状态'
   PRIMARY KEY (id)
 ) engine=innodb DEFAULT CHARSET=utf8 comment '请求加好友';
@@ -122,7 +122,7 @@ CREATE TABLE crMessages
   id int(11) NOT NULL AUTO_INCREMENT,
   chatRoomId int(11) NOT NULL comment '聊天室id',
   userId int(11) NOT NULL comment '发送者id',
-  content varchar(500) NOT NULL comment '消息内容',
+  `text` varchar(500) NOT NULL comment '消息内容',
   PRIMARY KEY (id)
 ) engine=innodb DEFAULT CHARSET=utf8 comment '聊天室消息内容';
 
@@ -130,7 +130,7 @@ CREATE TABLE crMessageReceiveCursors
 (
   id int(11) NOT NULL AUTO_INCREMENT,
   chatRoomId int(11) NOT NULL comment '聊天室id',
-  LastestMessageId int(11) NOT NULL comment '聊天室最新接受的消息id',
+  latestMessageId int(11) NOT NULL comment '聊天室最新接受的消息id',
   userId int(11) NOT NULL comment '消息接收者userId',
   PRIMARY KEY (id)
 ) engine=innodb DEFAULT CHARSET=utf8 comment '聊天室接受消息的记录';
@@ -143,7 +143,7 @@ CREATE TABLE passwordResetCodes
   code varchar(255) NOT NULL comment '重置码',
   userId int(11) NOT NULL comment '重置密码的userId',
   status enum('fresh','used') NOT NULL comment '状态信息',
-  password varchar(70) NOT NULL comment '未更改前的密码hash,用于存储历史密码',
+  password varchar(255) NOT NULL comment '未更改前的密码hash,用于存储历史密码',
   PRIMARY KEY (id)
 ) engine=innodb DEFAULT CHARSET=utf8 comment '密码重置功能';
 
@@ -154,6 +154,7 @@ CREATE TABLE crDisplayItems
 (
   id int(11) NOT NULL AUTO_INCREMENT,
   chatRoomId int(11) NOT NULL comment '聊天室id',
+  priority tinyint(1) NOT NULL DEFAULT 0 '优先级',
   PRIMARY KEY (id)
 ) engine=innodb DEFAULT CHARSET=utf8 comment '聊天室版块展示的列表';
 
